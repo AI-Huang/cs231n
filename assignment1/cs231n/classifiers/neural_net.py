@@ -6,6 +6,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from past.builtins import xrange
 
+from tqdm import tqdm
+
 
 class TwoLayerNet(object):
     """
@@ -82,9 +84,9 @@ class TwoLayerNet(object):
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
         # def f(x): return 1.0 / (1.0 + np.exp(-x))  # sigmoid activation function
-        def f(x): return np.maximum(0, x)  # ReLU activation function
-
-        h1 = f(X.dot(W1) + b1)
+        def f_ReLU(x): return np.maximum(0, x)  # ReLU activation function
+        a1 = X.dot(W1) + b1
+        h1 = f_ReLU(a1)
         scores = h1.dot(W2) + b2
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -124,16 +126,27 @@ class TwoLayerNet(object):
         # grads['W1'] should store the gradient on W1, and be a matrix of same size #
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
         grad = 0.0
-        grad += N
+        grad += h1.T.dot(y_pred-y_onehot)
         grad /= N
-        grad += reg * np.sum(W2 * W2)
+        grad += 2 * reg * W2
         grads['W2'] = grad
 
         grad = 0.0
+        grad += W2.dot((y_pred-y_onehot).T)
+        grad_h1 = grad
+
+        def d_ReLU(x):
+            x = x.clip(min=0)
+            x = np.sign(x)
+            return x
+
+        grad_a1 = grad_h1.T * d_ReLU(a1)
+
+        grad = 0.0
+        grad += X.T.dot(grad_a1)
         grad /= N
-        grad += reg * np.sum(W2 * W2)
+        grad += 2 * reg * W1
         grads['W1'] = grad
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -168,7 +181,9 @@ class TwoLayerNet(object):
         train_acc_history = []
         val_acc_history = []
 
-        for it in range(num_iters):
+        _X = np.copy(X)  # copy X for this epoch
+        _y = np.copy(y)
+        for it in tqdm(range(num_iters)):
             X_batch = None
             y_batch = None
 
@@ -178,7 +193,21 @@ class TwoLayerNet(object):
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-            pass
+            if _X.shape[0] < batch_size:
+                X_batch = _X  # left samples
+                y_batch = _y
+                # print(X_batch)
+                # print(y_batch)
+                _X = np.copy(X)  # copy X for next epoch
+                _y = np.copy(y)
+                i_samples = np.arange(_X.shape[0])
+                # print(i_samples)
+            else:
+                i_samples = np.random.choice(_X.shape[0], batch_size)
+                X_batch = _X[i_samples, :]
+                y_batch = _y[i_samples]
+                _X = np.delete(_X, i_samples, axis=0)
+                _y = np.delete(_y, i_samples, axis=0)
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -194,7 +223,8 @@ class TwoLayerNet(object):
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-            pass
+            for param_name in grads:
+                self.params[param_name] += - learning_rate * grads[param_name]
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -240,6 +270,10 @@ class TwoLayerNet(object):
         ###########################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+        def f_ReLU(x): return np.maximum(0, x)  # ReLU activation function
+        a1 = X.dot(self.params['W1']) + self.params['b1']
+        h1 = f_ReLU(a1)
+        scores = h1.dot(self.params['W2']) + self.params['b2']
         y_pred = np.argmax(scores, axis=1)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****

@@ -48,10 +48,10 @@ def softmax_loss_naive(W, X, y, reg):
         for j in range(num_classes):
             if j == y[i]:
                 loss += - np.log(prob[y[i]])
-                dW[:, j] += - (1 - prob[y[i]]) * X[i]
+                dW[:, j] += - (1 - prob[j]) * X[i]
                 continue
             # no loss for other j
-            dW[:, j] += prob[y[i]] * X[i]
+            dW[:, j] += prob[j] * X[i]
 
     loss /= num_train
     loss += reg * np.sum(W * W)
@@ -86,13 +86,19 @@ def softmax_loss_vectorized(W, X, y, reg):
 
     scores = X.dot(W)
     scores = np.exp(scores)  # softmax scores, n_train * n_classes
-    prob = np.divide(scores.T, np.sum(scores, axis=1)).T
-
+    prob = np.divide(scores.T, np.sum(scores, axis=1)).T  # softmax
     one_hot = np.eye(num_classes)[y]
+
+    dW += X.T.dot(prob-one_hot)
+
+    """
     for i in range(num_train):
-        dW += np.tile(X[i], (num_classes, 1)).T * (prob[i, y[i]] * (1-one_hot[i])
-                                                   - (1-prob[i, y[i]]) * one_hot[i])
-    # dW += np.tile(X[i], (num_classes, 1)).T
+        # a = (prob[i, y[i]] - 0) * (1-one_hot[i]) + \
+        # (prob[i, y[i]] - 1) * one_hot[i]
+        a = prob[i]-one_hot[i]  # equivalent with above
+        b = np.tile(X[i], (num_classes, 1)).T
+        dW += a * b  # weight b with a by column, dW += b * a  # same
+    """
 
     loss += - np.log(prob[np.arange(num_train), y])
     loss = np.sum(loss)

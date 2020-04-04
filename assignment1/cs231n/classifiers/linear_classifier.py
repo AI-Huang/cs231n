@@ -60,17 +60,19 @@ class LinearClassifier(object):
             # replacement is faster than sampling without replacement.              #
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+
             if _X.shape[0] < batch_size:
-                # X_batch = np.copy(_X)
-                # del _X
                 X_batch = _X  # left samples
                 y_batch = _y
-                _X = np.copy(X)  # copy X for this epoch
+                _X = np.copy(X)  # copy X for next epoch
                 _y = np.copy(y)
+                i_samples = np.arange(_X.shape[0])
             else:
                 i_samples = np.random.choice(_X.shape[0], batch_size)
                 X_batch = _X[i_samples, :]
                 y_batch = _y[i_samples]
+                _X = np.delete(_X, i_samples, axis=0)
+                _y = np.delete(_y, i_samples, axis=0)
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -86,8 +88,6 @@ class LinearClassifier(object):
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
             self.W += - learning_rate * grad
-            _X = np.delete(_X, i_samples, axis=0)
-            _y = np.delete(_y, i_samples, axis=0)
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
