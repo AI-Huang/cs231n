@@ -126,6 +126,7 @@ class TwoLayerNet(object):
         # grads['W1'] should store the gradient on W1, and be a matrix of same size #
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+
         grad = 0.0
         grad += h1.T.dot(y_pred-y_onehot)
         grad /= N
@@ -133,14 +134,13 @@ class TwoLayerNet(object):
         grads['W2'] = grad
 
         grad = 0.0
-        grad += W2.dot((y_pred-y_onehot).T)
+        grad += W2.dot((y_pred-y_onehot).T)  # softmax_grad
         grad_h1 = grad
 
         def d_ReLU(x):
             x = x.clip(min=0)
             x = np.sign(x)
             return x
-
         grad_a1 = grad_h1.T * d_ReLU(a1)
 
         grad = 0.0
@@ -148,6 +148,11 @@ class TwoLayerNet(object):
         grad /= N
         grad += 2 * reg * W1
         grads['W1'] = grad
+
+        # TODO
+        grads['b1'] = 0.0
+        grads['b2'] = 0.0
+
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
         return loss, grads
