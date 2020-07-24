@@ -1,3 +1,3 @@
 # cs231n
 
-cs231n lecture practice
+cs231n lecture practices

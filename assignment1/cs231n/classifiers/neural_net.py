@@ -186,8 +186,11 @@ class TwoLayerNet(object):
         train_acc_history = []
         val_acc_history = []
 
-        _X = np.copy(X)  # copy X for this epoch
-        _y = np.copy(y)
+        # train indices, shuffle
+        train_idx = np.arange(num_train)
+        # np.random.seed(42)
+        train_idx = np.random.permutation(train_idx)
+
         for it in tqdm(range(num_iters)):
             X_batch = None
             y_batch = None
@@ -198,21 +201,15 @@ class TwoLayerNet(object):
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-            if _X.shape[0] < batch_size:
-                X_batch = _X  # left samples
-                y_batch = _y
-                # print(X_batch)
-                # print(y_batch)
-                _X = np.copy(X)  # copy X for next epoch
-                _y = np.copy(y)
-                i_samples = np.arange(_X.shape[0])
-                # print(i_samples)
-            else:
-                i_samples = np.random.choice(_X.shape[0], batch_size)
-                X_batch = _X[i_samples, :]
-                y_batch = _y[i_samples]
-                _X = np.delete(_X, i_samples, axis=0)
-                _y = np.delete(_y, i_samples, axis=0)
+            current_step = it % iterations_per_epoch
+            _batch_size = batch_size
+            if (current_step+1) * batch_size >= num_train:
+                _batch_size = num_train - current_step*batch_size
+
+            batch_idx = train_idx[current_step *
+                                  batch_size:current_step*batch_size+_batch_size]
+            X_batch = X[batch_idx]
+            y_batch = y[batch_idx]
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 

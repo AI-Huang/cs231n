@@ -48,10 +48,10 @@ def softmax_loss_naive(W, X, y, reg):
         for j in range(num_classes):
             if j == y[i]:
                 loss += - np.log(prob[y[i]])
-                dW[:, j] += - (1 - prob[j]) * X[i]
+                dW[:, j] += (prob[j] - 1) * X[i]
                 continue
             # no loss for other j
-            dW[:, j] += prob[j] * X[i]
+            dW[:, j] += (prob[j] - 0) * X[i]
 
     loss /= num_train
     loss += reg * np.sum(W * W)
@@ -89,7 +89,7 @@ def softmax_loss_vectorized(W, X, y, reg):
     prob = np.divide(scores.T, np.sum(scores, axis=1)).T  # softmax
     one_hot = np.eye(num_classes)[y]
 
-    dW += X.T.dot(prob-one_hot)
+    dW += X.T.dot(prob-one_hot)  # softmax loss gradient
 
     """
     for i in range(num_train):
