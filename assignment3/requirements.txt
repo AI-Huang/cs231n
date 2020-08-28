@@ -7,7 +7,7 @@ async-timeout==3.0.0
 attrs==18.1.0
 backports-abc==0.4
 backports.ssl-match-hostname==3.5.0.1
-bleach==1.5.0
+bleach>=3.1.4
 certifi==2015.11.20.1
 chardet==3.0.4
 cycler==0.10.0
@@ -38,7 +38,7 @@ mistune==0.7.1
 multidict==4.3.1
 nbconvert==4.1.0
 nbformat==4.0.1
-nltk==3.2.2
+nltk>=3.4.5
 notebook==4.0.6
 numexpr==2.6.5
 numpy==1.13.3
@@ -54,7 +54,7 @@ python-dateutil==2.4.2
 pytz==2015.7
 pyzmq==15.1.0
 qtconsole==4.1.1
-scipy==0.19.0
+scipy>=1.4.1
 simplegeneric==0.8.1
 singledispatch==3.4.0.3
 sites==0.0.1
@@ -63,5 +63,5 @@ termcolor==1.1.0
 terminado==0.5
 tornado==4.3
 traitlets==4.0.0
-Werkzeug==0.14.1
+Werkzeug>=0.15.3
 yarl==1.2.4
