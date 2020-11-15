@@ -127,31 +127,30 @@ class TwoLayerNet(object):
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        grad = 0.0
-        grad += h1.T.dot(y_pred-y_onehot)
-        grad /= N
-        grad += 2 * reg * W2
-        grads['W2'] = grad
-
-        grad = 0.0
-        grad += W2.dot((y_pred-y_onehot).T)  # softmax_grad
-        grad_h1 = grad
+        grad_a2 = y_pred - y_onehot  # softmax grad
+        grads['W2'] = h1.T.dot(grad_a2)
+        grads['W2'] /= N
+        grads['W2'] += 2 * reg * W2
 
         def d_ReLU(x):
             x = x.clip(min=0)
             x = np.sign(x)
             return x
-        grad_a1 = grad_h1.T * d_ReLU(a1)
 
-        grad = 0.0
-        grad += X.T.dot(grad_a1)
-        grad /= N
-        grad += 2 * reg * W1
-        grads['W1'] = grad
+        grad_h1 = grad_a2.dot(W2.T)
+        grad_a1 = d_ReLU(a1) * grad_h1
 
-        # TODO
-        grads['b1'] = 0.0
-        grads['b2'] = 0.0
+        grads['W1'] = X.T.dot(grad_a1)
+        grads['W1'] /= N
+        grads['W1'] += 2 * reg * W1
+
+        grads['b2'] = np.ones(h1.shape[0]).dot(grad_a2)
+        grads['b2'] /= N
+        grads['b2'] += 2 * reg * b2
+
+        grads['b1'] = np.ones(X.shape[0]).dot(grad_a1)
+        grads['b1'] /= N
+        grads['b1'] += 2 * reg * b1
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
