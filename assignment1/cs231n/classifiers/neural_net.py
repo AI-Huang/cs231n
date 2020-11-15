@@ -129,8 +129,6 @@ class TwoLayerNet(object):
 
         grad_a2 = y_pred - y_onehot  # softmax grad
         grads['W2'] = h1.T.dot(grad_a2)
-        grads['W2'] /= N
-        grads['W2'] += 2 * reg * W2
 
         def d_ReLU(x):
             x = x.clip(min=0)
@@ -141,16 +139,15 @@ class TwoLayerNet(object):
         grad_a1 = d_ReLU(a1) * grad_h1
 
         grads['W1'] = X.T.dot(grad_a1)
-        grads['W1'] /= N
-        grads['W1'] += 2 * reg * W1
 
         grads['b2'] = np.ones(h1.shape[0]).dot(grad_a2)
-        grads['b2'] /= N
-        grads['b2'] += 2 * reg * b2
 
         grads['b1'] = np.ones(X.shape[0]).dot(grad_a1)
-        grads['b1'] /= N
-        grads['b1'] += 2 * reg * b1
+
+        # do regulation on gradient for all parameters
+        for param_name in grads:
+            grads[param_name] /= N
+            grads[param_name] += 2 * reg * self.params[param_name]
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -178,7 +175,7 @@ class TwoLayerNet(object):
         - verbose: boolean; if true print progress during optimization.
         """
         num_train = X.shape[0]
-        iterations_per_epoch = max(num_train / batch_size, 1)
+        iterations_per_epoch = max(num_train // batch_size, 1)
 
         # Use SGD to optimize the parameters in self.model
         loss_history = []
