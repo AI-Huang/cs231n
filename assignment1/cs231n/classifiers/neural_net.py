@@ -112,7 +112,8 @@ class TwoLayerNet(object):
 
         # loss = np.square(y_pred - y_onehot).sum() # MSE loss
         # softmax cross entropy loss
-        loss = - (y_onehot * np.log(y_pred)).sum()
+        loss = - \
+            (y_onehot * np.log(np.maximum(np.finfo(y_pred.dtype).eps, y_pred))).sum()
         loss /= N
         loss += reg * (np.sum(W1 * W1) + np.sum(W2 * W2))
 

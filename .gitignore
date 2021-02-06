@@ -1,3 +1,6 @@
+# numpy files
+*.npy
+
 # datasets
 cifar-10-batches-py/*
 tiny-imagenet-100-A*
