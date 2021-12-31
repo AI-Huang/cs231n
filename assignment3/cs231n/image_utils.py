@@ -6,7 +6,8 @@ import urllib.error
 import urllib.request
 import numpy as np
 from builtins import range
-from imageio import imread, imresize
+# from imageio import imread, imresize
+from imageio import imread
 from future import standard_library
 standard_library.install_aliases()
 
@@ -91,5 +92,7 @@ def load_image(filename, size=None):
         min_idx = np.argmin(orig_shape)
         scale_factor = float(size) / orig_shape[min_idx]
         new_shape = (orig_shape * scale_factor).astype(int)
-        img = imresize(img, scale_factor)
+        # img = imresize(img, scale_factor)
+        img = img.resize((size, size))
+
     return img
