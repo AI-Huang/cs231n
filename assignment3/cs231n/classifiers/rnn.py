@@ -74,7 +74,6 @@ class CaptioningRNN(object):
         for k, v in self.params.items():
             self.params[k] = v.astype(self.dtype)
 
-
     def loss(self, features, captions):
         """
         Compute training-time loss for the RNN. We input image features and
@@ -141,8 +140,29 @@ class CaptioningRNN(object):
         # in your implementation, if needed.                                       #
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        # Forward
+        N, D = features.shape
+        h0, h0_cache = temporal_affine_forward(
+            features.reshape(N, 1, D), W_proj, b_proj)
+        h0 = h0.reshape(N, -1)
+        word_vectors, embed_cache = word_embedding_forward(
+            captions_in, W_embed)
 
-        pass
+        h, forward_cache = rnn_forward(word_vectors, h0, Wx, Wh, b)
+        scores, score_cache = temporal_affine_forward(h, W_vocab, b_vocab)
+        loss, dx = temporal_softmax_loss(scores, captions_out, mask)
+
+        # Backward
+        dx, grads['W_vocab'], grads['b_vocab'] = temporal_affine_backward(
+            dx, score_cache)
+        dx, dh0, grads['Wx'], grads['Wh'], grads['b'] = rnn_backward(
+            dx, forward_cache)
+        grads['W_embed'] = word_embedding_backward(dx, embed_cache)
+
+        N, H = dh0.shape
+        dh0 = dh0.reshape(N, 1, H)
+        dx, grads['W_proj'], grads['b_proj'] = temporal_affine_backward(
+            dh0, h0_cache)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -150,7 +170,6 @@ class CaptioningRNN(object):
         ############################################################################
 
         return loss, grads
-
 
     def sample(self, features, max_length=30):
         """
@@ -211,7 +230,25 @@ class CaptioningRNN(object):
         ###########################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        N, D = features.shape
+        h0, h0_cache = temporal_affine_forward(
+            features.reshape(N, 1, D), W_proj, b_proj)
+        h0 = h0.reshape(N, -1)
+
+        captions[:, 0] = self._start
+        previous_h = h0
+        for i in range(1, max_length):
+            word, _ = word_embedding_forward(captions[:, i - 1], W_embed)
+            h, _ = rnn_step_forward(word, previous_h, Wx, Wh, b)
+
+            N, H = h.shape
+            scores, _ = temporal_affine_forward(
+                h.reshape(N, 1, H), W_vocab, b_vocab)
+
+            N, T, M = scores.shape
+            captions[:, i] = np.argmax(scores.reshape(N, -1), axis=1)
+
+            previous_h = h
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################

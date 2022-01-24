@@ -36,7 +36,16 @@ def rnn_step_forward(x, prev_h, Wx, Wh, b):
     ##############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    next_h = x.dot(Wx) + prev_h.dot(Wh) + b
+    next_h = np.tanh(next_h)
+    cache = {
+        "prev_h": prev_h,
+        "x": x,
+        "Wx": Wx,
+        "Wh": Wh,
+        "next_h": next_h,
+        "b": b,
+    }
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
@@ -69,7 +78,19 @@ def rnn_step_backward(dnext_h, cache):
     ##############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    x = cache['x']  # (N, D).
+    prev_h = cache['prev_h']  # (N, H)
+    Wx = cache['Wx']  # (D, H)
+    Wh = cache['Wh']  # (H, H)
+    db = cache['b']  # (H, )
+    next_h = cache['next_h']  # (N, H)
+    ##
+    dtanh = dnext_h*(1-next_h*next_h)  # (N, H)
+    dx = dtanh.dot(Wx.T)
+    dWx = x.T.dot(dtanh)
+    dprev_h = dtanh.dot(Wh.T)
+    dWh = prev_h.T.dot(dtanh)
+    db = np.sum(dtanh, axis=0)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
@@ -104,7 +125,18 @@ def rnn_forward(x, h0, Wx, Wh, b):
     ##############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    cache = []
+    N, T, D = x.shape
+    H = h0.shape[1]
+    x = x.transpose(1, 0, 2)
+    h = np.zeros((T, N, H))
+    h_prev = h0
+    for i in range(T):
+        h_next, tmp_cache = rnn_step_forward(x[i], h_prev, Wx, Wh, b)
+        cache.append(tmp_cache)
+        h[i] = h_next
+        h_prev = h_next
+    h = h.transpose(1, 0, 2)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
@@ -140,7 +172,26 @@ def rnn_backward(dh, cache):
     ##############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    cache_ = cache[-1]
+    prev_h, x, Wx, Wh, next_h, b = cache_['prev_h'], cache_[
+        'x'], cache_['Wx'], cache_['Wh'], cache_['next_h'], cache_['b']
+    # print(x.shape)
+    D = x.shape[1]
+    N, T, H = dh.shape
+    dx = np.zeros((N, T, D))
+    dh0 = np.zeros((N, H))
+    dWx = np.zeros((D, H))
+    dWh = np.zeros((H, H))
+    db = np.zeros(H)
+    dprev_h_ = np.zeros((N, H))
+    for i in range(T-1, -1, -1):
+        dx_, dprev_h_, dWx_, dWh_, db_ = rnn_step_backward(
+            dh[:, i, :] + dprev_h_, cache.pop())  # cache.pop()分别展示cache中的每一项
+        dx[:, i, :] = dx_
+        dh0 = dprev_h_
+        dWx += dWx_
+        dWh += dWh_
+        db += db_
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
@@ -172,7 +223,8 @@ def word_embedding_forward(x, W):
     ##############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    out = W[x, :]
+    cache = (x, W)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
@@ -205,7 +257,9 @@ def word_embedding_backward(dout, cache):
     ##############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    x, W = cache
+    dW = np.zeros_like(W)
+    np.add.at(dW, x, dout)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
@@ -457,6 +511,7 @@ def temporal_softmax_loss(x, y, mask, verbose=False):
     probs = np.exp(x_flat - np.max(x_flat, axis=1, keepdims=True))
     probs /= np.sum(probs, axis=1, keepdims=True)
     loss = -np.sum(mask_flat * np.log(probs[np.arange(N * T), y_flat])) / N
+
     dx_flat = probs.copy()
     dx_flat[np.arange(N * T), y_flat] -= 1
     dx_flat /= N

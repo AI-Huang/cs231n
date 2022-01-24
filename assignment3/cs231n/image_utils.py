@@ -71,6 +71,7 @@ def image_from_url(url):
         with open(fname, 'wb') as ff:
             ff.write(f.read())
         img = imread(fname)
+        os.close(_)
         os.remove(fname)
         return img
     except urllib.error.URLError as e:
