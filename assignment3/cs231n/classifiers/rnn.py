@@ -146,7 +146,7 @@ class CaptioningRNN(object):
             features.reshape(N, 1, D), W_proj, b_proj)
         h0 = h0.reshape(N, -1)
         word_vectors, embed_cache = word_embedding_forward(
-            captions_in, W_embed)
+            captions_in, W_embed)  # word_vectors, (N, T, D)
 
         h, forward_cache = rnn_forward(word_vectors, h0, Wx, Wh, b)
         scores, score_cache = temporal_affine_forward(h, W_vocab, b_vocab)
