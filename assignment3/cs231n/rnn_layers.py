@@ -173,8 +173,7 @@ def rnn_backward(dh, cache):
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
     cache_ = cache[-1]
-    prev_h, x, Wx, Wh, next_h, b = cache_['prev_h'], cache_[
-        'x'], cache_['Wx'], cache_['Wh'], cache_['next_h'], cache_['b']
+    x = cache_['x']
     # print(x.shape)
     D = x.shape[1]
     N, T, H = dh.shape
@@ -185,8 +184,9 @@ def rnn_backward(dh, cache):
     db = np.zeros(H)
     dprev_h_ = np.zeros((N, H))
     for i in range(T-1, -1, -1):
+        cache_ = cache.pop()  # cache.pop() 分别展示 cache 中的每一项
         dx_, dprev_h_, dWx_, dWh_, db_ = rnn_step_backward(
-            dh[:, i, :] + dprev_h_, cache.pop())  # cache.pop()分别展示cache中的每一项
+            dh[:, i, :] + dprev_h_, cache_)
         dx[:, i, :] = dx_
         dh0 = dprev_h_
         dWx += dWx_
@@ -311,7 +311,28 @@ def lstm_step_forward(x, prev_h, prev_c, Wx, Wh, b):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    _, H = prev_h.shape
+    a = np.dot(x, Wx) + np.dot(prev_h, Wh) + b
+    i = sigmoid(a[:, 0: H])
+    f = sigmoid(a[:, H: 2*H])
+    o = sigmoid(a[:, 2*H: 3*H])
+    g = np.tanh(a[:, 3*H: 4*H])
+
+    next_c = f*prev_c + i*g
+    next_h = o*np.tanh(next_c)
+    cache = {
+        "x": x,
+        "prev_h": prev_h,
+        "prev_c": prev_c,
+        "Wx": Wx,
+        "Wh": Wh,
+        "i": i,
+        "f": f,
+        "o": o,
+        "g": g,
+        "next_h": next_h,
+        "next_c": next_c
+    }
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
@@ -347,7 +368,22 @@ def lstm_step_backward(dnext_h, dnext_c, cache):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    x, prev_h, prev_c, Wx, Wh, i, f, o, g, next_h, next_c = cache["x"], cache[
+        "prev_h"], cache["prev_c"], cache["Wx"], cache["Wh"], cache["i"], cache["f"], cache["o"], cache["g"], cache["next_h"], cache["next_c"]
+
+    dnext_c = dnext_c + o*(1-np.tanh(next_c)**2) * \
+        dnext_h  # next_h = o*np.tanh(next_c)
+    di = dnext_c*g  # next_c = f*prev_c + i*g
+    df = dnext_c*prev_c  # next_c = f*prev_c + i*g
+    do = dnext_h*np.tanh(next_c)  # next_h = o*np.tanh(next_c)
+    dg = dnext_c*i  # next_h = o*np.tanh(next_c)
+    dprev_c = f*dnext_c  # next_c = f*prev_c + i*g
+    da = np.hstack((i*(1-i)*di, f*(1-f)*df, o*(1-o)*do, (1-g**2)*dg))
+    dx = da.dot(Wx.T)
+    dprev_h = da.dot(Wh.T)
+    dWx = x.T.dot(da)
+    dWh = prev_h.T.dot(da)
+    db = np.sum(da, axis=0)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
@@ -386,7 +422,19 @@ def lstm_forward(x, h0, Wx, Wh, b):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    N, T, D = x.shape
+    _, H = h0.shape
+    h = np.zeros((N, T, H))
+    c = np.zeros((N, T, H))
+    c0 = np.zeros((N, H))
+    cache = {}
+    for t in range(T):
+        if t == 0:
+            h[:, t, :], c[:, t, :], cache[t] = lstm_step_forward(
+                x[:, t, :], h0, c0, Wx, Wh, b)
+        else:
+            h[:, t, :], c[:, t, :], cache[t] = lstm_step_forward(
+                x[:, t, :], h[:, t-1, :], c[:, t-1, :], Wx, Wh, b)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
@@ -418,7 +466,24 @@ def lstm_backward(dh, cache):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    (N, T, H) = dh.shape
+    cache_ = cache[T-1]
+    x, prev_h, prev_c, Wx, Wh, i, f, o, g, next_h, next_c = cache_["x"], cache_[
+        "prev_h"], cache_["prev_c"], cache_["Wx"], cache_["Wh"], cache_["i"], cache_["f"], cache_["o"], cache_["g"], cache_["next_h"], cache_["next_c"]
+    N, D = x.shape
+    dx = np.zeros((N, T, D))
+    dWx = np.zeros(Wx.shape)
+    dWh = np.zeros(Wh.shape)
+    db = np.zeros((4*H))
+    dprev = np.zeros(prev_h.shape)
+    dprev_c = np.zeros(prev_c.shape)
+    for t in range(T-1, -1, -1):
+        dx[:, t, :], dprev, dprev_c, dWx_local, dWh_local, db_local = lstm_step_backward(
+            dh[:, t, :]+dprev, dprev_c, cache[t])
+        dWx += dWx_local
+        dWh += dWh_local
+        db += db_local
+    dh0 = dprev
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
